@@ -37,6 +37,8 @@ We provide some Mel Spectrogram samples of radio and audio in `example/ljspeech`
 ```
 
 ## Evaluation
+We provide some collected radio signal examples in `examples/ljspeech` that users can use with pre-trained weights to generate speech signals from radio signals and evaluate the performance.
+
 1.Prepare the extracted radio-audio Mel Spectrogram and list the path of them as shown in `examples/LJSpeech_val.csv`.
 
 2.Change the `vocoder_ckpt`, `vocoder_config` and  `load_best_model` in `eval.sh`  to your own path (pre-trained model of our TransUnet and Parallel WaveGAN), then run

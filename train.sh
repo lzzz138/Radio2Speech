@@ -1,11 +1,11 @@
 #!/bin/bash
+  
+config=config/train.yaml
+list_train=lrs2_radar_csv/train.csv
+list_val=lrs2_radar_csv/val.csv
 
-config=config/train_LJSpeech.yaml
-list_train=examples/LJSpeech_train_training.csv
-list_val=examples/LJSpeech_val_training.csv
-
-tensorboard_dir=/your/path/ckpt
-save_ckpt=/your/path/tensorboard
+tensorboard_dir=tensorboard
+save_ckpt=ckpt
 
 CUDA_VISIBLE_DEVICES=0,1 python -m torch.distributed.launch --nproc_per_node 2 train_Radio2Speech.py \
   --config=$config \

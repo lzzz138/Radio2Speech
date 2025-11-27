@@ -3,9 +3,9 @@
 # LJSpeech (TransUnet)
 config=config/eval.yaml
 dataset_name=LJSpeech
-vocoder_ckpt=/your/path/train_nodev_ljspeech_parallel_wavegan.v1/checkpoint-400000steps.pkl
-vocoder_config=/your/path/train_nodev_ljspeech_parallel_wavegan.v1/config.yml
-list_val=examples/LJSpeech_val.csv
+vocoder_ckpt=train_nodev_ljspeech_parallel_wavegan.v1/checkpoint-400000steps.pkl
+vocoder_config=train_nodev_ljspeech_parallel_wavegan.v1/config.yml
+list_val=lrs2_radar_csv/test.csv
 audio_path=examples/ljspeech/audio_wave
 load_best_model=/your/path/transunet_LJSpeech/net_best.pth
 #save_wave_path=

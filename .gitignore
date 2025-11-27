@@ -9,3 +9,9 @@ network_structure.py
 **/.DS_Store
 __pycache__
 .gitignore
+
+/net_best.pth
+/R50+ViT-B_16.npz
+/train_nodev_ljspeech_parallel_wavegan.v1
+/ckpt
+/tensorboard

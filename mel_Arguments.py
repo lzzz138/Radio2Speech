@@ -39,7 +39,13 @@ class ArgParser(object):
 
         # distributed
         parser.add_argument('--distributed', help='distributed training', default=True, type=str)
-        parser.add_argument('--local_rank', help='distributed training for local_rank', default=0, type=int)
+        parser.add_argument(
+            '--local_rank', '--local-rank',
+            dest='local_rank',
+            type=int,
+            default=0,
+            help='本地 GPU 编号，由分布式启动器自动传入'
+        )
 
         # directory
         parser.add_argument('--list_train', help='list of training data', type=str)

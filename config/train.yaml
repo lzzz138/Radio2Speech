@@ -5,7 +5,7 @@ mlp_dim: 3072
 num_heads: 12
 transformer_dropout_rate: 0.1
 transformer_attention_dropout_rate: 0.0
-transformer_pretrained_path: /your/path/R50+ViT-B_16.npz
+transformer_pretrained_path: /home/lzq/paperCode/Radio2Speech/R50+ViT-B_16.npz
 
 # visualization
 disp_iter: 50
@@ -20,7 +20,7 @@ lr_scheduler: "warmup"
 warmup_ratio: 0.2
 step_size: 200
 
-distributed: True
+distributed: True 
 local_rank: 0
 
 save_freq: 20

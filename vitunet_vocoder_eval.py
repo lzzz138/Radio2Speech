@@ -51,7 +51,7 @@ class ArgParser(object):
         parser.add_argument('--list_val', help='list of validation data')
         parser.add_argument('--audio_path', help='path of raw audio files')
         parser.add_argument('--load_best_model', help='load from best model')
-        parser.add_argument('--save_wave_path', help='path to save generated wave files', type=str)
+        parser.add_argument('--save_wave_path', help='path to save generated wave files', type=str, default='save_waves')
 
         self.parser = parser
 
@@ -113,8 +113,8 @@ class radioaudiomelDataset(Dataset):
         else:
             # for TIMIT
             file_split = radio_file.lstrip('/').split('/')
-            file_folder = file_split[-2] # MEDR0
-            filename = file_split[-1].split('.')[0] # SA1
+            file_folder = file_split[-2] # 0
+            filename = file_split[-1].split('.')[0] # 00001_cut_radio_mel
             audio_raw_path = os.path.join(self.audio_path, file_folder, f'{filename}.wav')
 
         # audio load
@@ -123,8 +123,11 @@ class radioaudiomelDataset(Dataset):
         # radio load
         raido_h5f = h5py.File(radio_file, 'r')
         radio_melamp = raido_h5f['mel'][:]
+        print("语音路径", audio_raw_path)      
         # raw audio signal load
-        audio_raw, sr = librosa.load(audio_raw_path, sr=None, mono=True)
+        audio_raw, sr = librosa.load(audio_raw_path, sr=8000, mono=True)
+
+        print(sr, self.sampling_rate)
 
         assert sr == self.sampling_rate
         assert audio_melamp.shape == radio_melamp.shape
@@ -186,36 +189,39 @@ def main():
 
             #c(Tensor): Local conditioning auxiliary features (T', C).
             pred = pred.squeeze(0).squeeze(0)
+            print("预测的梅尔谱图尺寸", pred.shape)
             audio_pred = vocoder.inference(pred, normalize_before=False).view(-1)
 
             audio_pred = audio_pred.cpu().numpy()
-            if audio_pred.shape[0] > audio_raw.shape[0]:
-                audio_pred = audio_pred[: audio_raw.shape[0]]
 
-            ## save the predicted wave
-            # for TIMIT
-            # if '/' in filename:
-            #     folder = filename.split('/')[0]
-            #     file = filename.split('/')[1]
-            #     if not os.path.exists(os.path.join(args.save_wave_path, folder)):
-            #         os.makedirs(os.path.join(args.save_wave_path, folder))
-            #     sf.write(os.path.join(args.save_wave_path, folder, f"{file}.wav"), audio_pred, args.audRate)
-            # else:
-            #     # for LJSpeech
-            #     if not os.path.exists(os.path.join(args.save_wave_path)):
-            #         os.makedirs(os.path.join(args.save_wave_path))
-            #     sf.write(os.path.join(args.save_wave_path, f"{filename}.wav"), audio_pred, args.audRate)
+            min_len = min(audio_raw.shape[0], audio_pred.shape[0])
+            audio_raw_eval = audio_raw[:min_len]
+            audio_pred_eval = audio_pred[:min_len]
 
             # calculate the metrics
-            stoi = pysepm.stoi(audio_raw, audio_pred, args.audRate)
-            llr = pysepm.llr(audio_raw, audio_pred, args.audRate)
-            pesq_mos_lqo = pesq(args.audRate, audio_raw, audio_pred, 'nb')
-            lsd = compute_log_distortion(audio_raw, audio_pred)
+            stoi = pysepm.stoi(audio_raw_eval, audio_pred_eval, args.audRate)
+            llr = pysepm.llr(audio_raw_eval, audio_pred_eval, args.audRate)
+            pesq_mos_lqo = pesq(args.audRate, audio_raw_eval, audio_pred_eval, 'nb')
+            lsd = compute_log_distortion(audio_raw_eval, audio_pred_eval)
 
             stoi_metric.update(stoi)
             llr_metric.update(llr)
             pesq_metric.update(pesq_mos_lqo)
             lsd_metric.update(lsd)
+
+            # save the predicted wave
+            # for TIMIT
+            if '/' in filename:
+                folder = filename.split('/')[0]
+                file = filename.split('/')[1]
+                if not os.path.exists(os.path.join(args.save_wave_path, folder)):
+                    os.makedirs(os.path.join(args.save_wave_path, folder))
+                sf.write(os.path.join(args.save_wave_path, folder, f"{file}.wav"), audio_pred, args.audRate)
+            else:
+                # for LJSpeech
+                if not os.path.exists(os.path.join(args.save_wave_path)):
+                    os.makedirs(os.path.join(args.save_wave_path))
+                sf.write(os.path.join(args.save_wave_path, f"{filename}.wav"), audio_pred, args.audRate)
 
         print('Evaluation Summary: LSD:{:.4f}, stoi:{:.4f}, llr:{:.4f}, pesq:{:.4f}'
               .format(lsd_metric.average(), stoi_metric.average(),

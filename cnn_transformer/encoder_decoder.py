@@ -66,7 +66,7 @@ class up_conv(nn.Module):
         return output
 
 
-class out_conv(nn.Module):
+class out_conv(nn.Module):                                                       
     def __init__(self, in_channels, out_channels):
         super(out_conv, self).__init__()
         self.inoutconv = nn.Conv2d(in_channels, out_channels, kernel_size=(1,1))

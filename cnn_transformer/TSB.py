@@ -70,8 +70,8 @@ class TSB(nn.Module):
 
     def forward(self, amp):
         '''
-        amp should be [Batch, Ca, Dim, Time]
-        amp should be [Batch, Cr, Dim, Time]
+        amp should be [Batch, Ca, Time, Dim]
+        amp should be [Batch, Cr, Time, Dim]
         '''
 
         amp_out1 = amp.transpose(-1, -2)

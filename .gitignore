@@ -15,3 +15,4 @@ __pycache__
 /train_nodev_ljspeech_parallel_wavegan.v1
 /ckpt
 /tensorboard
+/save_waves

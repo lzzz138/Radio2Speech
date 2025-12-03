@@ -2,13 +2,13 @@
 
 # LJSpeech (TransUnet)
 config=config/eval.yaml
-dataset_name=LJSpeech
+dataset_name=LS2
 vocoder_ckpt=train_nodev_ljspeech_parallel_wavegan.v1/checkpoint-400000steps.pkl
 vocoder_config=train_nodev_ljspeech_parallel_wavegan.v1/config.yml
 list_val=lrs2_radar_csv/test.csv
-audio_path=examples/ljspeech/audio_wave
-load_best_model=/your/path/transunet_LJSpeech/net_best.pth
-#save_wave_path=
+audio_path=/home/lzq/data/lrs2_radar/audio_raw
+load_best_model=ckpt/net_best.pth
+save_wave_path=save_waves
 
 CUDA_VISIBLE_DEVICES=1 python vitunet_vocoder_eval.py \
  --config=$config \

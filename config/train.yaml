@@ -20,7 +20,7 @@ lr_scheduler: "warmup"
 warmup_ratio: 0.2
 step_size: 200
 
-distributed: True 
+distributed: True
 local_rank: 0
 
 save_freq: 20

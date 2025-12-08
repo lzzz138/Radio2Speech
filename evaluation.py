@@ -49,6 +49,8 @@ def evaluate(model, val_loader, criterion, epoch, history, tb_log, count_iter):
                 radio_amp = radio_amp.cuda()
 
                 audio_pred_amp = model(radio_amp)
+                if(audio_pred_amp.ndim > audio_amp.ndim):
+                    audio_pred_amp = audio_pred_amp[3]
 
                 eval_loss = criterion(audio_pred_amp, audio_amp)
 

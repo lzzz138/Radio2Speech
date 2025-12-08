@@ -7,7 +7,7 @@ list_val=lrs2_radar_csv/val.csv
 tensorboard_dir=tensorboard
 save_ckpt=ckpt
 
-CUDA_VISIBLE_DEVICES=0,1 python -m torch.distributed.launch --nproc_per_node 2 train_Radio2Speech.py \
+CUDA_VISIBLE_DEVICES=0,1 python -m torch.distributed.launch --nproc_per_node 2 --master_port 29501 train_EMCAD.py \
   --config=$config \
   --list_train=$list_train \
   --list_val=$list_val \

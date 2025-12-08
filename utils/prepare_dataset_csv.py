@@ -20,9 +20,9 @@ def parse_args() -> argparse.Namespace:
 
 
 def infer_split(folder_idx: int) -> str:
-    if 0 <= folder_idx <= 4:
-        return "test"
-    if 5 <= folder_idx <= 14:
+    # if 0 <= folder_idx <= 4:
+    #     return "test"
+    if 0 <= folder_idx <= 9:
         return "val"
     return "train"
 

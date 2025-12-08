@@ -16,3 +16,4 @@ __pycache__
 /ckpt
 /tensorboard
 /save_waves
+/emcad/pretrained_pth

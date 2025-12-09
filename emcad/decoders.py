@@ -5,7 +5,6 @@ from functools import partial
 import math
 from timm.models.layers import trunc_normal_tf_
 from timm.models.helpers import named_apply
-import torch.nn.functional as F
 
 
 def gcd(a, b):
@@ -247,11 +246,6 @@ class LGAG(nn.Module):
     def forward(self, g, x):
         g1 = self.W_g(g)
         x1 = self.W_x(x)
-        
-        # 添加这段代码：如果尺寸不匹配，强制将 g1 插值到 x1 的尺寸
-        if g1.shape[2:] != x1.shape[2:]:
-            g1 = torch.nn.functional.interpolate(g1, size=x1.shape[2:], mode='bilinear', align_corners=False)
-            
         psi = self.activation(g1 + x1)
         psi = self.psi(psi)
 
@@ -357,11 +351,6 @@ class EMCAD(nn.Module):
         # LGAG3
         x3 = self.lgag3(g=d3, x=skips[0])
         
-        # --- 修复开始：强制对齐 d3 和 x3 ---
-        if d3.shape[2:] != x3.shape[2:]:
-            d3 = F.interpolate(d3, size=x3.shape[2:], mode='bilinear', align_corners=False)
-        # --- 修复结束 ---
-
         # Additive aggregation 3
         d3 = d3 + x3
         
@@ -369,43 +358,33 @@ class EMCAD(nn.Module):
         d3 = self.cab3(d3)*d3
         d3 = self.sab(d3)*d3  
         d3 = self.mscb3(d3)
-
+        
         # EUCB2
         d2 = self.eucb2(d3)
-
+        
         # LGAG2
         x2 = self.lgag2(g=d2, x=skips[1])
-
-        # --- 修复开始：强制对齐 d2 和 x2 ---
-        if d2.shape[2:] != x2.shape[2:]:
-            d2 = F.interpolate(d2, size=x2.shape[2:], mode='bilinear', align_corners=False)
-        # --- 修复结束 ---
-
+        
         # Additive aggregation 2
-        d2 = d2 + x2
-
+        d2 = d2 + x2 
+        
         # MSCAM2
         d2 = self.cab2(d2)*d2
         d2 = self.sab(d2)*d2
         d2 = self.mscb2(d2)
-
+        
         # EUCB1
         d1 = self.eucb1(d2)
-
+        
         # LGAG1
         x1 = self.lgag1(g=d1, x=skips[2])
-
-        # --- 修复开始：强制对齐 d1 和 x1 ---
-        if d1.shape[2:] != x1.shape[2:]:
-            d1 = F.interpolate(d1, size=x1.shape[2:], mode='bilinear', align_corners=False)
-        # --- 修复结束 ---
-
+        
         # Additive aggregation 1
-        d1 = d1 + x1
-
+        d1 = d1 + x1 
+        
         # MSCAM1
         d1 = self.cab1(d1)*d1
         d1 = self.sab(d1)*d1
         d1 = self.mscb1(d1)
-
+        
         return [d4, d3, d2, d1]

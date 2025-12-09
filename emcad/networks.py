@@ -2,9 +2,9 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
-from .pvtv2 import pvt_v2_b0, pvt_v2_b1, pvt_v2_b2, pvt_v2_b3, pvt_v2_b4, pvt_v2_b5
-from .resnet import resnet18, resnet34, resnet50, resnet101, resnet152
-from .decoders import EMCAD
+from pvtv2 import pvt_v2_b0, pvt_v2_b1, pvt_v2_b2, pvt_v2_b3, pvt_v2_b4, pvt_v2_b5
+from resnet import resnet18, resnet34, resnet50, resnet101, resnet152
+from decoders import EMCAD
 
 
 class EMCADNet(nn.Module):
@@ -80,9 +80,9 @@ class EMCADNet(nn.Module):
         print('Model %s created, param count: %d' %
                      ('EMCAD decoder: ', sum([m.numel() for m in self.decoder.parameters()])))
              
-        # self.out_head4 = nn.Conv2d(channels[0], num_classes, 1)
-        # self.out_head3 = nn.Conv2d(channels[1], num_classes, 1)
-        # self.out_head2 = nn.Conv2d(channels[2], num_classes, 1)
+        self.out_head4 = nn.Conv2d(channels[0], num_classes, 1)
+        self.out_head3 = nn.Conv2d(channels[1], num_classes, 1)
+        self.out_head2 = nn.Conv2d(channels[2], num_classes, 1)
         self.out_head1 = nn.Conv2d(channels[3], num_classes, 1)
         
     def forward(self, x, mode='test'):
@@ -99,27 +99,26 @@ class EMCADNet(nn.Module):
         dec_outs = self.decoder(x4, [x3, x2, x1])
         
         # prediction heads  
-        # p4 = self.out_head4(dec_outs[0])
-        # p3 = self.out_head3(dec_outs[1])
-        # p2 = self.out_head2(dec_outs[2])
+        p4 = self.out_head4(dec_outs[0])
+        p3 = self.out_head3(dec_outs[1])
+        p2 = self.out_head2(dec_outs[2])
         p1 = self.out_head1(dec_outs[3])
 
-        # p4 = F.interpolate(p4, scale_factor=32, mode='bilinear')
-        # p3 = F.interpolate(p3, scale_factor=16, mode='bilinear')
-        # p2 = F.interpolate(p2, scale_factor=8, mode='bilinear')
+        p4 = F.interpolate(p4, scale_factor=32, mode='bilinear')
+        p3 = F.interpolate(p3, scale_factor=16, mode='bilinear')
+        p2 = F.interpolate(p2, scale_factor=8, mode='bilinear')
         p1 = F.interpolate(p1, scale_factor=4, mode='bilinear')
 
-        # if mode == 'test':
-        #     return [p4, p3, p2, p1]
+        if mode == 'test':
+            return [p4, p3, p2, p1]
         
-        return p1
-        # return [p4, p3, p2, p1]
+        return [p4, p3, p2, p1]
                
 
         
 if __name__ == '__main__':
     model = EMCADNet().cuda()
-    input_tensor = torch.randn(1, 3, 352, 352).cuda()
+    input_tensor = torch.randn(60, 1, 80, 80).cuda()
 
     P = model(input_tensor)
     print(P[0].size(), P[1].size(), P[2].size(), P[3].size())

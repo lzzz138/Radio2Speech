@@ -20,6 +20,7 @@ import configargparse
 from utils.mel_utils import AverageMeter
 from parallel_wavegan.utils import load_model
 from cnn_transformer.transunet import TransUnet as TransUnet
+from cnn_transformer.conformerunet import ConformerUnet
 
 class ArgParser(object):
     def __init__(self):
@@ -150,13 +151,15 @@ def main():
     val_set = radioaudiomelDataset(args.dataset_name, args.list_val, args.audio_path, args.audRate)
 
     # 1. define radio_audio unet
-    mel_generator = TransUnet(args.hidden_size, 
-                              args.transformer_num_layers, 
-                              args.mlp_dim, 
-                              args.num_heads, 
-                              args.transformer_dropout_rate, 
-                              args.transformer_attention_dropout_rate
-                              ).cuda()
+    # mel_generator = TransUnet(args.hidden_size, 
+    #                           args.transformer_num_layers, 
+    #                           args.mlp_dim, 
+    #                           args.num_heads, 
+    #                           args.transformer_dropout_rate, 
+    #                           args.transformer_attention_dropout_rate
+    #                           ).cuda()
+    
+    mel_generator = ConformerUnet(1024, 1024, 3).cuda()
 
     logging.info(f'Loading best model from: {args.load_best_model}')
     pretrained_dict = torch.load(args.load_best_model, map_location='cpu')

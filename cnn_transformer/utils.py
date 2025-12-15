@@ -9,6 +9,7 @@ from torch import nn
 from torch.optim import Optimizer
 from torch.optim.lr_scheduler import LambdaLR
 import torch.nn.functional as F
+from pytorch_msssim import ssim
 
 
 def checkpoint(net, history, epoch, optimizer, count_iter, args):
@@ -56,6 +57,17 @@ class LogSTFTMagnitudeLoss(torch.nn.Module):
         """
         return F.l1_loss(x_mag, y_mag)
         # return F.l1_loss(torch.log(y_mag), torch.log(x_mag))
+        
+        
+
+class SSIMLoss(torch.nn.Module):
+    def forward(self, x_mag, y_mag):
+        # SSIM 需要输入为 [B, C, H, W]，如果你的数据是 [B, 1, T, F] 格式则直接可用
+        # 返回的是相似度（最大为1），所以 Loss = 1 - SSIM
+        return 1.0 - ssim(x_mag, y_mag, data_range=1.0, size_average=True)
+
+
+
 
 class AdamW(Optimizer):
     """

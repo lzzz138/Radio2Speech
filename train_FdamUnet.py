@@ -17,7 +17,7 @@ from cnn_transformer.utils import AdamW, get_linear_schedule_with_warmup, LogSTF
 from utils.mel_utils import AverageMeter, dist_average  # 计量与分布式平均
 
 # transformer + unet
-from cnn_transformer.conformerunet import ConformerUnet
+from cnn_transformer.fdamunet import FdamUnet
 
 from evaluation import evaluate, evaluate_visual     # 评估函数
 
@@ -123,7 +123,13 @@ def train_net(args):
     # audio_amp / radio_amp: [B, 1, T, F]
 
     # 3. 构建模型
-    net = ConformerUnet(1024, 1024, 3)
+    net = FdamUnet(args.hidden_size, 
+                    args.transformer_num_layers, 
+                    args.mlp_dim, 
+                    args.num_heads, 
+                    args.transformer_dropout_rate, 
+                    args.transformer_attention_dropout_rate
+                    )
 
     # 同步 BN（多 GPU）
     if args.distributed:
@@ -150,7 +156,7 @@ def train_net(args):
         step_size = args.step_size * len(train_loader)  # 把“按 epoch”转换为“按迭代步”
         scheduler = optim.lr_scheduler.StepLR(optimizer, step_size=step_size, gamma=0.4)
 
-    criterion = LogSTFTMagnitudeLoss  # L1 Mel 频谱损失
+    criterion = LogSTFTMagnitudeLoss()  # L1 Mel 频谱损失
 
     logging.info(f'''Starting training:
         Epochs:          {args.epochs}

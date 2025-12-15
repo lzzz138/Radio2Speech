@@ -21,6 +21,7 @@ from utils.mel_utils import AverageMeter
 from parallel_wavegan.utils import load_model
 from cnn_transformer.transunet import TransUnet as TransUnet
 from cnn_transformer.conformerunet import ConformerUnet
+from cnn_transformer.fdamunet import FdamUnet
 
 class ArgParser(object):
     def __init__(self):
@@ -96,6 +97,8 @@ class radioaudiomelDataset(Dataset):
         self.files = trans_list(input_path)
         self.audio_path = audio_path
         self.sampling_rate = sampling_rate
+        
+        self.expmel_len = 80 
 
     def __len__(self):
         return len(self.files)
@@ -143,6 +146,52 @@ class radioaudiomelDataset(Dataset):
                torch.FloatTensor(radio_melamp).unsqueeze(0).unsqueeze(0))
 
 
+# 新增：绘制对比谱图的函数
+def plot_mel_comparison(gt_mel, pred_mel, save_path, filename):
+    """
+    绘制真实谱图和预测谱图的对比图并保存
+    gt_mel: Ground Truth Mel Spectrogram (numpy array, shape: [Time, Freq] or [Freq, Time])
+    pred_mel: Predicted Mel Spectrogram (numpy array, shape: [Time, Freq] or [Freq, Time])
+    save_path: 保存路径
+    filename: 文件名
+    """
+    # 确保谱图是 [Freq, Time] 格式用于 librosa 显示
+    if gt_mel.shape[0] > gt_mel.shape[1]:
+        gt_mel = gt_mel.T
+    if pred_mel.shape[0] > pred_mel.shape[1]:
+        pred_mel = pred_mel.T
+
+    plt.figure(figsize=(10, 6))
+    
+    # 绘制真实谱图
+    plt.subplot(2, 1, 1)
+    librosa.display.specshow(gt_mel, x_axis='time', y_axis='mel', cmap='viridis')
+    plt.colorbar(format='%+2.0f dB')
+    plt.title(f'Ground Truth Mel: {filename}')
+    
+    # 绘制预测谱图
+    plt.subplot(2, 1, 2)
+    librosa.display.specshow(pred_mel, x_axis='time', y_axis='mel', cmap='viridis')
+    plt.colorbar(format='%+2.0f dB')
+    plt.title(f'Predicted Mel: {filename}')
+    
+    plt.tight_layout()
+    
+    # 构建保存路径
+    if '/' in filename:
+        folder = filename.split('/')[0]
+        name = filename.split('/')[1]
+        save_dir = os.path.join(save_path, folder)
+    else:
+        name = filename
+        save_dir = save_path
+        
+    if not os.path.exists(save_dir):
+        os.makedirs(save_dir)
+        
+    plt.savefig(os.path.join(save_dir, f'{name}_comparison.png'))
+    plt.close()
+
 def main():
     parser = ArgParser()
     args = parser.parse_train_arguments()
@@ -151,15 +200,14 @@ def main():
     val_set = radioaudiomelDataset(args.dataset_name, args.list_val, args.audio_path, args.audRate)
 
     # 1. define radio_audio unet
-    # mel_generator = TransUnet(args.hidden_size, 
-    #                           args.transformer_num_layers, 
-    #                           args.mlp_dim, 
-    #                           args.num_heads, 
-    #                           args.transformer_dropout_rate, 
-    #                           args.transformer_attention_dropout_rate
-    #                           ).cuda()
+    mel_generator = FdamUnet(args.hidden_size, 
+                              args.transformer_num_layers, 
+                              args.mlp_dim, 
+                              args.num_heads, 
+                              args.transformer_dropout_rate, 
+                              args.transformer_attention_dropout_rate
+                              ).cuda()
     
-    mel_generator = ConformerUnet(1024, 1024, 3).cuda()
 
     logging.info(f'Loading best model from: {args.load_best_model}')
     pretrained_dict = torch.load(args.load_best_model, map_location='cpu')
@@ -182,6 +230,11 @@ def main():
     llr_metric = AverageMeter()
     pesq_metric = AverageMeter()
     lsd_metric = AverageMeter()
+    
+    # 新增：定义谱图保存路径
+    vis_save_path = os.path.join(args.save_wave_path, 'vis_spectrograms')
+    if not os.path.exists(vis_save_path):
+        os.makedirs(vis_save_path)
 
     with torch.no_grad(), tqdm(val_set, desc='[decode]') as pbar:
         for idx, (filename, audio_raw, audio_melamp, radio_melamp) in enumerate(pbar):
@@ -192,7 +245,14 @@ def main():
 
             #c(Tensor): Local conditioning auxiliary features (T', C).
             pred = pred.squeeze(0).squeeze(0)
-            print("预测的梅尔谱图尺寸", pred.shape)
+            print("预测的梅尔谱图尺寸", pred.shape) # 可以注释掉减少刷屏
+            
+            # --- 新增：调用绘图函数 ---
+            # audio_melamp 是 numpy, pred 是 tensor，需要转 numpy
+            pred_np = pred.cpu().numpy()
+            plot_mel_comparison(audio_melamp, pred_np, vis_save_path, filename)
+            # -----------------------
+
             audio_pred = vocoder.inference(pred, normalize_before=False).view(-1)
 
             audio_pred = audio_pred.cpu().numpy()
@@ -214,17 +274,17 @@ def main():
 
             # save the predicted wave
             # for TIMIT
-            if '/' in filename:
-                folder = filename.split('/')[0]
-                file = filename.split('/')[1]
-                if not os.path.exists(os.path.join(args.save_wave_path, folder)):
-                    os.makedirs(os.path.join(args.save_wave_path, folder))
-                sf.write(os.path.join(args.save_wave_path, folder, f"{file}.wav"), audio_pred, args.audRate)
-            else:
-                # for LJSpeech
-                if not os.path.exists(os.path.join(args.save_wave_path)):
-                    os.makedirs(os.path.join(args.save_wave_path))
-                sf.write(os.path.join(args.save_wave_path, f"{filename}.wav"), audio_pred, args.audRate)
+            # if '/' in filename:
+            #     folder = filename.split('/')[0]
+            #     file = filename.split('/')[1]
+            #     if not os.path.exists(os.path.join(args.save_wave_path, folder)):
+            #         os.makedirs(os.path.join(args.save_wave_path, folder))
+            #     sf.write(os.path.join(args.save_wave_path, folder, f"{file}.wav"), audio_pred, args.audRate)
+            # else:
+            #     # for LJSpeech
+            #     if not os.path.exists(os.path.join(args.save_wave_path)):
+            #         os.makedirs(os.path.join(args.save_wave_path))
+            #     sf.write(os.path.join(args.save_wave_path, f"{filename}.wav"), audio_pred, args.audRate)
 
         print('Evaluation Summary: LSD:{:.4f}, stoi:{:.4f}, llr:{:.4f}, pesq:{:.4f}'
               .format(lsd_metric.average(), stoi_metric.average(),

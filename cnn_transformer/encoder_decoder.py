@@ -168,14 +168,13 @@ class unet_TSB_decoder(nn.Module):
         # h = int(pad_input.size(-2) / 16)
         # w = int(pad_input.size(-1) / 16)
         
-        # todo 修改部分
-        # h = int(pad_input.size(-2) / 8)
-        # w = int(pad_input.size(-1) / 8)
+        h = int(pad_input.size(-2) / 8)
+        
+        w = int(pad_input.size(-1) / 8)
 
-        # B, n_patch, hidden = hidden_states.size()  # reshape from (B, n_patch, hidden) to (B, h, w, hidden)
-        # x = hidden_states.permute(0, 2, 1)
-        # x = x.contiguous().view(B, hidden, h, w)
-        x = hidden_states
+        B, n_patch, hidden = hidden_states.size()  # reshape from (B, n_patch, hidden) to (B, h, w, hidden)
+        x = hidden_states.permute(0, 2, 1)
+        x = x.contiguous().view(B, hidden, h, w)
         down_feature = self.conv_more(x)
 
         # radio_upfeature1 = self.uplayer1(down_feature, encoder_features[0])

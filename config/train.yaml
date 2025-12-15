@@ -14,8 +14,8 @@ disp_iter: 50
 batch_size: 32
 val_batch_size: 50
 learning_rate: 0.0025
-epochs: 60
-opt: "adam"
+epochs: 100
+opt: "sgd"
 lr_scheduler: "warmup"
 warmup_ratio: 0.2
 step_size: 200
